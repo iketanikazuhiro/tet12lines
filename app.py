@@ -261,3 +261,51 @@ html_code = """
         player.linesCleared += rowCount;
         updateLineCount();
         if (player.linesCleared >= 12) {
+          alert("Congratulations! 12 lines cleared!");
+          cancelAnimationFrame(updateId);
+        }
+      }
+    }
+    
+    // 「あと◯◯行」表示を更新
+    function updateLineCount() {
+      const remaining = 12 - player.linesCleared;
+      document.getElementById("line-count").textContent = "あと " + remaining + " 行";
+    }
+    
+    const arena = createMatrix(12, 20);
+    
+    // キー操作
+    document.addEventListener('keydown', event => {
+      if (event.keyCode === 37) {       // 左矢印
+        playerMove(-1);
+      } else if (event.keyCode === 39) { // 右矢印
+        playerMove(1);
+      } else if (event.keyCode === 40) { // 下矢印
+        playerDrop();
+      } else if (event.keyCode === 81) { // Q
+        playerRotate(-1);
+      } else if (event.keyCode === 87) { // W
+        playerRotate(1);
+      }
+    });
+    
+    function update(time = 0) {
+      const deltaTime = time - lastTime;
+      lastTime = time;
+      dropCounter += deltaTime;
+      if (dropCounter > dropInterval) {
+        playerDrop();
+      }
+      draw();
+      updateId = requestAnimationFrame(update);
+    }
+    
+    playerReset();
+    update();
+  </script>
+</body>
+</html>
+"""
+
+components.html(html_code, height=500)
