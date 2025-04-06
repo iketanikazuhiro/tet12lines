@@ -6,7 +6,7 @@ st.set_page_config(page_title="Mini Tetris - 12 Lines", layout="centered")
 st.markdown(
     """
     <style>
-      header {visibility: hidden;}
+      header { visibility: hidden; }
       .stApp { background-color: #f0f0f0; }
       body { margin: 0; background: #f0f0f0; }
     </style>
@@ -54,14 +54,14 @@ html_code = """
       background: #f0f0f0;
       border: none;
     }
-    /* 残りライン数表示（コントロールの上に1行空けて中央揃え） */
+    /* ラインカウント表示（コントロールの上に1行空けて中央揃え） */
     #line-count {
       text-align: center;
       font-size: 1.2em;
       color: #333;
       margin-top: 10px;
     }
-    /* コントロールボタン（START, RESET）：文字表示のみ（枠なし） */
+    /* コントロールボタン（START, RESET）は下部に配置。文字のみ（枠なし） */
     #controls {
       text-align: center;
       margin-top: 10px;
@@ -177,7 +177,7 @@ html_code = """
     function draw() {
       context.fillStyle = "#f0f0f0";
       context.fillRect(0, 0, canvas.width, canvas.height);
-      drawMatrix(arena, {x:0, y:0}, context);
+      drawMatrix(arena, {x: 0, y: 0}, context);
       drawMatrix(player.matrix, player.pos, context);
     }
 
@@ -240,7 +240,7 @@ html_code = """
         player.linesCleared += rowCount;
         updateLineCount();
         if (player.linesCleared >= 12) {
-          // 12ラインクリアで全表示を消去
+          // 12ラインクリアで全表示を消去し、背景のみの無地画面にする
           document.body.innerHTML = "";
           document.body.style.background = "#f0f0f0";
           return;
@@ -250,7 +250,7 @@ html_code = """
 
     // ----- プレイヤー操作 -----
     const player = {
-      pos: {x: 0, y: 0},
+      pos: { x: 0, y: 0 },
       matrix: null,
       linesCleared: 0
     };
