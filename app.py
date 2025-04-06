@@ -1,5 +1,6 @@
 import streamlit as st
 import streamlit.components.v1 as components
+import random
 
 st.set_page_config(page_title="Mini Tetris - 12 Lines", layout="centered")
 st.markdown(
@@ -25,22 +26,52 @@ html_code = """
       overflow: hidden;
       font-family: sans-serif;
     }
-    canvas {
-      display: block;
+    /* キー操作説明（ゲーム画面の上部、中央揃え） */
+    #instructions {
+      text-align: center;
+      font-size: 1.5em;
+      color: #333;
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+    /* ゲームコンテナ：相対配置で次ピースプレビューを絶対配置 */
+    #game-container {
+      position: relative;
+      width: 240px;
       margin: auto;
-      background: #c0c0c0;
+    }
+    /* メインキャンバス：背景は薄いグレー、枠はやや濃いグレー */
+    canvas#tetris {
+      display: block;
+      background: #f0f0f0;
+      border: 2px solid #888;
+    }
+    /* 次ピースプレビューキャンバス：ゲーム画面の右上に配置 */
+    canvas#next {
+      position: absolute;
+      top: 0;
+      right: -90px;
+      background: #f0f0f0;
+      border: 2px solid #888;
+    }
+    /* ラインカウント表示：下部中央 */
+    #line-count {
+      text-align: center;
+      font-size: 1.2em;
+      color: #333;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <canvas id="tetris" width="240" height="400"></canvas>
+  <div id="instructions">←　→　Ｑ　Ｒ　↓</div>
+  <div id="game-container">
+    <canvas id="tetris" width="240" height="400"></canvas>
+    <canvas id="next" width="80" height="80"></canvas>
+  </div>
+  <div id="line-count">あと 12 行</div>
   <script>
-    // キャンバスとコンテキストの取得
-    const canvas = document.getElementById('tetris');
-    const context = canvas.getContext('2d');
-    context.scale(20, 20);
-
-    // アリーナ（フィールド）の作成
+    // ----- 基本関数 -----
     function createMatrix(w, h) {
       const matrix = [];
       while (h--) {
@@ -48,8 +79,6 @@ html_code = """
       }
       return matrix;
     }
-
-    // ピースの定義
     function createPiece(type) {
       if (type === 'T') {
         return [
@@ -59,44 +88,49 @@ html_code = """
         ];
       } else if (type === 'O') {
         return [
-          [0,2,2],
-          [0,2,2],
+          [1,1],
+          [1,1]
         ];
       } else if (type === 'L') {
         return [
-          [0,3,0],
-          [0,3,0],
-          [0,3,3]
+          [0,1,0],
+          [0,1,0],
+          [0,1,1]
         ];
       } else if (type === 'J') {
         return [
-          [0,4,0],
-          [0,4,0],
-          [4,4,0]
+          [0,1,0],
+          [0,1,0],
+          [1,1,0]
         ];
       } else if (type === 'I') {
         return [
-          [0,5,0,0],
-          [0,5,0,0],
-          [0,5,0,0],
-          [0,5,0,0]
+          [0,1,0,0],
+          [0,1,0,0],
+          [0,1,0,0],
+          [0,1,0,0]
         ];
       } else if (type === 'S') {
         return [
-          [0,6,6],
-          [6,6,0],
+          [0,1,1],
+          [1,1,0],
           [0,0,0]
         ];
       } else if (type === 'Z') {
         return [
-          [7,7,0],
-          [0,7,7],
+          [1,1,0],
+          [0,1,1],
           [0,0,0]
         ];
       }
     }
+    function randomPiece() {
+      const pieces = 'TJLOSZI';
+      return pieces[pieces.length * Math.random() | 0];
+    }
 
-    // カラー設定（すべて淡い青 (#ADD8E6)）
+    // ----- カラー設定 -----
+    // ブロックの色はすべて淡い青 (#ADD8E6)
     const colors = [
       null,
       '#ADD8E6',
@@ -108,26 +142,30 @@ html_code = """
       '#ADD8E6'
     ];
 
-    // 描画処理
-    function drawMatrix(matrix, offset) {
+    // ----- 描画処理 -----
+    const canvas = document.getElementById("tetris");
+    const context = canvas.getContext("2d");
+    context.scale(20, 20);
+
+    function drawMatrix(matrix, offset, ctx) {
       matrix.forEach((row, y) => {
         row.forEach((value, x) => {
           if (value !== 0) {
-            context.fillStyle = colors[value];
-            context.fillRect(x + offset.x, y + offset.y, 1, 1);
+            ctx.fillStyle = colors[value];
+            ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
           }
         });
       });
     }
 
     function draw() {
-      context.fillStyle = '#000';
+      context.fillStyle = "#f0f0f0";  // 背景：薄いグレー
       context.fillRect(0, 0, canvas.width, canvas.height);
-      drawMatrix(arena, {x:0, y:0});
-      drawMatrix(player.matrix, player.pos);
+      drawMatrix(arena, {x: 0, y: 0}, context);
+      drawMatrix(player.matrix, player.pos, context);
     }
 
-    // 衝突判定
+    // ----- 衝突判定 -----
     function collide(arena, player) {
       const m = player.matrix;
       const o = player.pos;
@@ -142,7 +180,7 @@ html_code = """
       return false;
     }
 
-    // ピース固定とラインクリア処理
+    // ----- ピース固定・ラインクリア -----
     function merge(arena, player) {
       player.matrix.forEach((row, y) => {
         row.forEach((value, x) => {
@@ -152,9 +190,9 @@ html_code = """
         });
       });
     }
-
     function arenaSweep() {
-      outer: for (let y = arena.length -1; y >= 0; y--) {
+      let rowCount = 0;
+      outer: for (let y = arena.length - 1; y >= 0; y--) {
         for (let x = 0; x < arena[y].length; x++) {
           if (arena[y][x] === 0) {
             continue outer;
@@ -162,13 +200,60 @@ html_code = """
         }
         arena.splice(y, 1)[0].fill(0);
         arena.unshift(new Array(arena[0].length).fill(0));
-        player.linesCleared++;
+        rowCount++;
+        y++;
+      }
+      if (rowCount > 0) {
+        player.linesCleared += rowCount;
+        updateLineCount();
         if (player.linesCleared >= 12) {
           alert("Game Over! 12 lines cleared.");
           cancelAnimationFrame(updateId);
           return;
         }
-        y++;
+      }
+    }
+
+    // ----- 次ピースプレビュー -----
+    const nextCanvas = document.getElementById("next");
+    const nextContext = nextCanvas.getContext("2d");
+    nextContext.scale(20, 20);
+    function updateNext() {
+      nextContext.fillStyle = "#f0f0f0";
+      nextContext.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+      if (nextPiece) {
+        // 中央揃えのためのオフセット（nextCanvasは80x80なので、4マス×4マス分の描画想定）
+        const matrix = nextPiece;
+        const offset = {
+          x: Math.floor((nextCanvas.width / 20 - matrix[0].length) / 2),
+          y: Math.floor((nextCanvas.height / 20 - matrix.length) / 2)
+        };
+        drawMatrix(matrix, offset, nextContext);
+      }
+    }
+
+    // ----- プレイヤー操作 -----
+    const player = {
+      pos: {x: 0, y: 0},
+      matrix: null,
+      linesCleared: 0
+    };
+    let nextPiece = createPiece(randomPiece());
+
+    function playerReset() {
+      // 次ピースを現在のピースに
+      player.matrix = nextPiece;
+      // 新たな次ピースを生成
+      nextPiece = createPiece(randomPiece());
+      updateNext();
+      player.pos.y = 0;
+      player.pos.x = ((arena[0].length / 2) | 0) - ((player.matrix[0].length / 2) | 0);
+      if (collide(arena, player)) {
+        arena.forEach(row => row.fill(0));
+        player.linesCleared = 0;
+        updateLineCount();
+        alert("Game Over!");
+        cancelAnimationFrame(updateId);
       }
     }
 
@@ -218,45 +303,13 @@ html_code = """
       }
     }
 
+    // ----- 更新ループ -----
     let dropCounter = 0;
     let dropInterval = 1000;
     let lastTime = performance.now();
     let updateId;
 
     const arena = createMatrix(12, 20);
-    const player = {
-      pos: {x: 0, y: 0},
-      matrix: null,
-      linesCleared: 0,
-    };
-
-    function playerReset() {
-      const pieces = 'TJLOSZI';
-      player.matrix = createPiece(pieces[pieces.length * Math.random() | 0]);
-      player.pos.y = 0;
-      player.pos.x = (arena[0].length / 2 | 0) -
-                     (player.matrix[0].length / 2 | 0);
-      if (collide(arena, player)) {
-        arena.forEach(row => row.fill(0));
-        player.linesCleared = 0;
-        alert("Game Over!");
-        cancelAnimationFrame(updateId);
-      }
-    }
-
-    document.addEventListener('keydown', event => {
-      if (event.keyCode === 37) {
-        playerMove(-1);
-      } else if (event.keyCode === 39) {
-        playerMove(1);
-      } else if (event.keyCode === 40) {
-        playerDrop();
-      } else if (event.keyCode === 81) {
-        playerRotate(-1);
-      } else if (event.keyCode === 87) {
-        playerRotate(1);
-      }
-    });
 
     function update(time) {
       const deltaTime = time - lastTime;
@@ -269,8 +322,36 @@ html_code = """
       updateId = requestAnimationFrame(update);
     }
 
-    playerReset();
-    updateId = requestAnimationFrame(update);
+    // ----- ラインカウント表示 -----
+    function updateLineCount() {
+      const remaining = 12 - player.linesCleared;
+      document.getElementById("line-count").textContent = "あと " + remaining + " 行";
+    }
+
+    // ----- キー操作 -----
+    document.addEventListener('keydown', event => {
+      if (event.keyCode === 37) {         // 左矢印
+        playerMove(-1);
+      } else if (event.keyCode === 39) {  // 右矢印
+        playerMove(1);
+      } else if (event.keyCode === 40) {  // 下矢印
+        playerDrop();
+      } else if (event.keyCode === 81) {  // Q（反時計回り）
+        playerRotate(-1);
+      } else if (event.keyCode === 82) {  // R（時計回り）
+        playerRotate(1);
+      }
+    });
+
+    // ----- 初期化と更新ループ開始 -----
+    function init() {
+      player.linesCleared = 0;
+      updateLineCount();
+      playerReset();
+      updateId = requestAnimationFrame(update);
+    }
+
+    init();
   </script>
 </body>
 </html>
