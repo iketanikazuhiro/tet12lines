@@ -61,7 +61,7 @@ html_code = """
       color: #333;
       margin-top: 10px;
     }
-    /* コントロールボタン（START, RESET）は下部に配置。文字のみ（枠なし） */
+    /* コントロールボタン（START, RESET）を下部に配置。文字のみ（背景・枠線なし） */
     #controls {
       text-align: center;
       margin-top: 10px;
@@ -240,7 +240,7 @@ html_code = """
         player.linesCleared += rowCount;
         updateLineCount();
         if (player.linesCleared >= 12) {
-          // 12ラインクリアで全表示を消去し、背景のみの無地画面にする
+          // 12ラインクリアで全表示を消去（背景のみの無地画面）
           document.body.innerHTML = "";
           document.body.style.background = "#f0f0f0";
           return;
