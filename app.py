@@ -26,7 +26,7 @@ html_code = """
       overflow: hidden;
       font-family: sans-serif;
     }
-    /* キー操作の説明を画面上部に中央揃えで表示 */
+    /* キー操作説明を画面上部に表示 */
     #instructions {
       text-align: center;
       font-size: 1.5em;
@@ -34,7 +34,7 @@ html_code = """
       margin-top: 10px;
       margin-bottom: 10px;
     }
-    /* ゲームコンテナ：メインキャンバスと次ピースプレビューを含む */
+    /* ゲームコンテナ（キャンバス部分） */
     #game-container {
       position: relative;
       width: 240px;
@@ -46,7 +46,7 @@ html_code = """
       background: #f0f0f0;
       border: 2px solid #888;
     }
-    /* 次ピースプレビュー：枠なし、背景も薄いグレー */
+    /* 次ピースプレビュー：枠はなし、背景は薄いグレー */
     canvas#next {
       position: absolute;
       top: 0;
@@ -54,7 +54,14 @@ html_code = """
       background: #f0f0f0;
       border: none;
     }
-    /* コントロールボタン（START, RESET）はゲーム画面の下に配置 */
+    /* ラインカウント表示（コントロール表示の上に1行空けて） */
+    #line-count {
+      text-align: center;
+      font-size: 1.2em;
+      color: #333;
+      margin-top: 10px;
+    }
+    /* コントロールボタン（START, RESET）の表示。枠はなし */
     #controls {
       text-align: center;
       margin-top: 10px;
@@ -64,16 +71,9 @@ html_code = """
       font-size: 1em;
       cursor: pointer;
       background: none;
-      border: 2px solid #888;
+      border: none;
       color: #333;
       margin: 0 5px;
-    }
-    /* ラインカウント表示 */
-    #line-count {
-      text-align: center;
-      font-size: 1.2em;
-      color: #333;
-      margin-top: 10px;
     }
   </style>
 </head>
@@ -83,11 +83,11 @@ html_code = """
     <canvas id="tetris" width="240" height="400"></canvas>
     <canvas id="next" width="80" height="80"></canvas>
   </div>
+  <div id="line-count">Lines to Clear: 12</div>
   <div id="controls">
     <button id="start-btn" onclick="startGame()">START</button>
     <button id="reset-btn" onclick="resetGame()">RESET</button>
   </div>
-  <div id="line-count">あと 12 行</div>
   <script>
     // ----- 基本関数 -----
     function createMatrix(w, h) {
@@ -148,7 +148,7 @@ html_code = """
     }
 
     // ----- カラー設定 -----
-    // ブロックの色は全て淡い青 (#ADD8E6)
+    // ブロックの色はすべて淡い青 (#ADD8E6)
     const colors = [
       null,
       '#ADD8E6',
@@ -181,10 +181,10 @@ html_code = """
       drawMatrix(player.matrix, player.pos, context);
     }
 
-    // ----- 次ピースプレビュー描画 -----
+    // ----- 次ピースプレビュー -----
     const nextCanvas = document.getElementById("next");
     const nextContext = nextCanvas.getContext("2d");
-    nextContext.scale(20,20);
+    nextContext.scale(20, 20);
     function updateNext() {
       nextContext.fillStyle = "#f0f0f0";
       nextContext.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
@@ -225,7 +225,7 @@ html_code = """
     }
     function arenaSweep() {
       let rowCount = 0;
-      outer: for (let y = arena.length -1; y >= 0; y--) {
+      outer: for (let y = arena.length - 1; y >= 0; y--) {
         for (let x = 0; x < arena[y].length; x++) {
           if (arena[y][x] === 0) {
             continue outer;
@@ -240,8 +240,9 @@ html_code = """
         player.linesCleared += rowCount;
         updateLineCount();
         if (player.linesCleared >= 12) {
-          alert("Game Over! 12 lines cleared.");
-          cancelAnimationFrame(updateId);
+          // 12ラインクリアで全表示を消去
+          document.body.innerHTML = "";
+          document.body.style.background = "#f0f0f0";
           return;
         }
       }
@@ -331,7 +332,7 @@ html_code = """
     // ----- ラインカウント表示 -----
     function updateLineCount() {
       const remaining = 12 - player.linesCleared;
-      document.getElementById("line-count").textContent = "あと " + remaining + " 行";
+      document.getElementById("line-count").textContent = "Lines to Clear: " + remaining;
     }
 
     // ----- キー操作 -----
@@ -351,8 +352,6 @@ html_code = """
 
     // ----- ゲーム開始とリセット -----
     function startGame() {
-      // キー操作を有効にするためdocumentにフォーカス（既にdocument全体で有効なはず）
-      // ゲーム開始前にアニメーションループを開始
       player.linesCleared = 0;
       updateLineCount();
       playerReset();
@@ -369,7 +368,6 @@ html_code = """
 
     // ----- 初期化 -----
     function init() {
-      // 初期化時は何も動かず、STARTボタン待ちの状態
       arena.forEach(row => row.fill(0));
       player.linesCleared = 0;
       updateLineCount();
