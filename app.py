@@ -46,7 +46,7 @@ html_code = """
       background: #f0f0f0;
       border: 2px solid #888;
     }
-    /* 次ピースプレビュー：枠はなし、背景は薄いグレー */
+    /* 次ピースプレビュー：枠なし、背景は薄いグレー */
     canvas#next {
       position: absolute;
       top: 0;
@@ -54,14 +54,14 @@ html_code = """
       background: #f0f0f0;
       border: none;
     }
-    /* ラインカウント表示（コントロール表示の上に1行空けて） */
+    /* 残りライン数表示（コントロールの上に1行空けて中央揃え） */
     #line-count {
       text-align: center;
       font-size: 1.2em;
       color: #333;
       margin-top: 10px;
     }
-    /* コントロールボタン（START, RESET）の表示。枠はなし */
+    /* コントロールボタン（START, RESET）：文字表示のみ（枠なし） */
     #controls {
       text-align: center;
       margin-top: 10px;
