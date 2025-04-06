@@ -26,7 +26,7 @@ html_code = """
       overflow: hidden;
       font-family: sans-serif;
     }
-    /* キー操作説明（ゲーム画面の上部、中央揃え） */
+    /* キー操作の説明を画面上部に中央揃えで表示 */
     #instructions {
       text-align: center;
       font-size: 1.5em;
@@ -34,7 +34,7 @@ html_code = """
       margin-top: 10px;
       margin-bottom: 10px;
     }
-    /* ゲームコンテナ：相対配置で次ピースプレビューを絶対配置 */
+    /* ゲームコンテナ：メインキャンバスと次ピースプレビューを含む */
     #game-container {
       position: relative;
       width: 240px;
@@ -46,15 +46,29 @@ html_code = """
       background: #f0f0f0;
       border: 2px solid #888;
     }
-    /* 次ピースプレビューキャンバス：ゲーム画面の右上に配置 */
+    /* 次ピースプレビュー：枠なし、背景も薄いグレー */
     canvas#next {
       position: absolute;
       top: 0;
       right: -90px;
       background: #f0f0f0;
-      border: 2px solid #888;
+      border: none;
     }
-    /* ラインカウント表示：下部中央 */
+    /* コントロールボタン（START, RESET）はゲーム画面の下に配置 */
+    #controls {
+      text-align: center;
+      margin-top: 10px;
+    }
+    #controls button {
+      padding: 8px 16px;
+      font-size: 1em;
+      cursor: pointer;
+      background: none;
+      border: 2px solid #888;
+      color: #333;
+      margin: 0 5px;
+    }
+    /* ラインカウント表示 */
     #line-count {
       text-align: center;
       font-size: 1.2em;
@@ -68,6 +82,10 @@ html_code = """
   <div id="game-container">
     <canvas id="tetris" width="240" height="400"></canvas>
     <canvas id="next" width="80" height="80"></canvas>
+  </div>
+  <div id="controls">
+    <button id="start-btn" onclick="startGame()">START</button>
+    <button id="reset-btn" onclick="resetGame()">RESET</button>
   </div>
   <div id="line-count">あと 12 行</div>
   <script>
@@ -130,7 +148,7 @@ html_code = """
     }
 
     // ----- カラー設定 -----
-    // ブロックの色はすべて淡い青 (#ADD8E6)
+    // ブロックの色は全て淡い青 (#ADD8E6)
     const colors = [
       null,
       '#ADD8E6',
@@ -142,11 +160,10 @@ html_code = """
       '#ADD8E6'
     ];
 
-    // ----- 描画処理 -----
+    // ----- ゲーム画面描画 -----
     const canvas = document.getElementById("tetris");
     const context = canvas.getContext("2d");
     context.scale(20, 20);
-
     function drawMatrix(matrix, offset, ctx) {
       matrix.forEach((row, y) => {
         row.forEach((value, x) => {
@@ -157,12 +174,28 @@ html_code = """
         });
       });
     }
-
     function draw() {
-      context.fillStyle = "#f0f0f0";  // 背景：薄いグレー
+      context.fillStyle = "#f0f0f0";
       context.fillRect(0, 0, canvas.width, canvas.height);
-      drawMatrix(arena, {x: 0, y: 0}, context);
+      drawMatrix(arena, {x:0, y:0}, context);
       drawMatrix(player.matrix, player.pos, context);
+    }
+
+    // ----- 次ピースプレビュー描画 -----
+    const nextCanvas = document.getElementById("next");
+    const nextContext = nextCanvas.getContext("2d");
+    nextContext.scale(20,20);
+    function updateNext() {
+      nextContext.fillStyle = "#f0f0f0";
+      nextContext.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+      if (nextPiece) {
+        const matrix = nextPiece;
+        const offset = {
+          x: Math.floor((nextCanvas.width/20 - matrix[0].length)/2),
+          y: Math.floor((nextCanvas.height/20 - matrix.length)/2)
+        };
+        drawMatrix(matrix, offset, nextContext);
+      }
     }
 
     // ----- 衝突判定 -----
@@ -192,7 +225,7 @@ html_code = """
     }
     function arenaSweep() {
       let rowCount = 0;
-      outer: for (let y = arena.length - 1; y >= 0; y--) {
+      outer: for (let y = arena.length -1; y >= 0; y--) {
         for (let x = 0; x < arena[y].length; x++) {
           if (arena[y][x] === 0) {
             continue outer;
@@ -214,24 +247,6 @@ html_code = """
       }
     }
 
-    // ----- 次ピースプレビュー -----
-    const nextCanvas = document.getElementById("next");
-    const nextContext = nextCanvas.getContext("2d");
-    nextContext.scale(20, 20);
-    function updateNext() {
-      nextContext.fillStyle = "#f0f0f0";
-      nextContext.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
-      if (nextPiece) {
-        // 中央揃えのためのオフセット（nextCanvasは80x80なので、4マス×4マス分の描画想定）
-        const matrix = nextPiece;
-        const offset = {
-          x: Math.floor((nextCanvas.width / 20 - matrix[0].length) / 2),
-          y: Math.floor((nextCanvas.height / 20 - matrix.length) / 2)
-        };
-        drawMatrix(matrix, offset, nextContext);
-      }
-    }
-
     // ----- プレイヤー操作 -----
     const player = {
       pos: {x: 0, y: 0},
@@ -239,11 +254,8 @@ html_code = """
       linesCleared: 0
     };
     let nextPiece = createPiece(randomPiece());
-
     function playerReset() {
-      // 次ピースを現在のピースに
       player.matrix = nextPiece;
-      // 新たな次ピースを生成
       nextPiece = createPiece(randomPiece());
       updateNext();
       player.pos.y = 0;
@@ -256,7 +268,6 @@ html_code = """
         cancelAnimationFrame(updateId);
       }
     }
-
     function playerDrop() {
       player.pos.y++;
       if (collide(arena, player)) {
@@ -267,14 +278,12 @@ html_code = """
       }
       dropCounter = 0;
     }
-
     function playerMove(dir) {
       player.pos.x += dir;
       if (collide(arena, player)) {
         player.pos.x -= dir;
       }
     }
-
     function playerRotate(dir) {
       const pos = player.pos.x;
       let offset = 1;
@@ -289,7 +298,6 @@ html_code = """
         }
       }
     }
-
     function rotate(matrix, dir) {
       for (let y = 0; y < matrix.length; ++y) {
         for (let x = 0; x < y; ++x) {
@@ -308,9 +316,7 @@ html_code = """
     let dropInterval = 1000;
     let lastTime = performance.now();
     let updateId;
-
     const arena = createMatrix(12, 20);
-
     function update(time) {
       const deltaTime = time - lastTime;
       lastTime = time;
@@ -343,14 +349,32 @@ html_code = """
       }
     });
 
-    // ----- 初期化と更新ループ開始 -----
-    function init() {
+    // ----- ゲーム開始とリセット -----
+    function startGame() {
+      // キー操作を有効にするためdocumentにフォーカス（既にdocument全体で有効なはず）
+      // ゲーム開始前にアニメーションループを開始
+      player.linesCleared = 0;
+      updateLineCount();
+      playerReset();
+      updateId = requestAnimationFrame(update);
+    }
+    function resetGame() {
+      cancelAnimationFrame(updateId);
+      arena.forEach(row => row.fill(0));
       player.linesCleared = 0;
       updateLineCount();
       playerReset();
       updateId = requestAnimationFrame(update);
     }
 
+    // ----- 初期化 -----
+    function init() {
+      // 初期化時は何も動かず、STARTボタン待ちの状態
+      arena.forEach(row => row.fill(0));
+      player.linesCleared = 0;
+      updateLineCount();
+      playerReset();
+    }
     init();
   </script>
 </body>
